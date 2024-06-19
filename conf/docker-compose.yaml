@@ -1,0 +1,10 @@
+services:
+  www:
+    image: caddy:latest
+    restart: unless-stopped
+    network_mode: "host"
+    volumes:
+      - "${SERVICE_CACHE}/caddy:/etc/caddy"
+      - "${SERVICE_DATA}/sites:/srv"
+      - "${SERVICE_DATA}/caddy:/data"
+      - "${SERVICE_DATA}/caddy_config:/config"

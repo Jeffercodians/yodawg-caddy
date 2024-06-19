@@ -1,0 +1,113 @@
+#!/usr/bin/env bash
+
+set -ueo pipefail
+
+CADDY_ENDPOINTS_ROOT="${SERVICE_CACHE}/endpoints"
+mkdir -p "${CADDY_ENDPOINTS_ROOT}"
+
+# @cmd
+status() {
+	_docker_compose ps
+}
+
+# @cmd
+up() {
+	render_caddyfiles
+	_docker_compose up -d
+}
+
+# @cmd
+down() {
+	_docker_compose down
+}
+
+# @cmd
+reload() {
+	render_caddyfiles
+	exec_caddy reload --config /etc/caddy/Caddyfile
+}
+
+# @cmd
+logs() {
+	_docker_compose logs
+}
+
+# @cmd
+# @alias	exec,caddy
+# @arg	caddy_args~
+exec_caddy() {
+	_docker_compose exec "${SERVICE_FRONTEND}" \
+		caddy "${argc_caddy_args[@]:-"${@}"}"
+}
+
+# @cmd
+list_services() {
+	find "${CADDY_ENDPOINTS_ROOT}" -mindepth 1 -maxdepth 1 -name 'endpoints.*' | \
+		xargs -rL1 basename | \
+		sed -e 's/^endpoints\.//'
+}
+
+# @cmd
+# @arg service
+get_service_endpoint() {
+	local _hostport _endpoints
+	_hostport="$(cat "${CADDY_ENDPOINTS_ROOT}/hostport.${argc_service:-"${1}"}")"
+	_endpoints="$(
+		cat "${CADDY_ENDPOINTS_ROOT}/endpoints.${argc_service:-"${1}"}" | \
+			paste -sd ',')"
+	echo "${_hostport} ${_endpoints}"
+}
+
+# @cmd
+# @arg service
+# @arg endpoint
+# @arg hostport
+add_service_endpoint() {
+	local _endpoints _endpoint_file
+	_endpoint_file="${CADDY_ENDPOINTS_ROOT}/endpoints.${argc_service:-"${1}"}"
+	if [ -f "${_endpoint_file}" ]; then
+		_endpoints="$(cat "${_endpoint_file}")"
+		cat <<EOF | sort | uniq > "${_endpoint_file}"
+${_endpoints}
+${argc_endpoint:-"${2}"}
+EOF
+	else
+		echo "${argc_endpoint:-"${2}"}" > "${_endpoint_file}"
+	fi
+}
+
+# @cmd
+# @arg service
+# @arg hostport
+set_service_hostport() {
+	echo "${argc_hostport:-"${3}"}" > \
+	       "${CADDY_ENDPOINTS_ROOT}/hostport.${argc_service:-"${1}"}"
+}
+
+# @cmd
+# @arg service 
+remove_service() {	
+	rm -f "${SERVICE_CACHE}/endpoints/endpoints.${argc_service:-"${1}"}" \
+		"${SERVICE_CACHE}/endpoints/hostport.${argc_service:-"${1}"}"
+}
+
+# @cmd
+render_caddyfiles() (
+	local _caddyfile_root="${SERVICE_CACHE}/caddy"
+	mkdir -p "${_caddyfile_root}"
+	find "${_caddyfile_root}" -name "*.caddy" -exec rm {} \;
+
+	cp "${SERVICE_CONF}/Caddyfile" "${_caddyfile_root}/Caddyfile"
+	readarray -t _services < <(list_services)
+	for _service in "${_services[@]}"; do
+		read -r SERVICE_HOSTPORT SERVICE_ENDPOINT \
+			< <(get_service_endpoint "${_service}")
+		export SERVICE_HOSTPORT SERVICE_ENDPOINT
+		SERVICE_ENDPOINT="$(tr ',' ' ' <<< "${SERVICE_ENDPOINT}")"
+
+		envsubst < "${SERVICE_CONF}/caddy_service_template.conf" \
+			>> "${_caddyfile_root}/${_service}.caddy"
+	done
+)
+
+eval "$(argc --argc-eval "${0}" "${@}")"

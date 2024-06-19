@@ -1,0 +1,53 @@
+#!/usr/bin/env bash
+
+set -ueo pipefail
+
+# @cmd
+up() {
+	yo caddy up
+}
+
+# @cmd
+reload() {
+	yo caddy reload
+}
+
+# @cmd
+list_services() {
+	yo caddy list_services
+}
+
+# @cmd
+# @arg	service
+get_service() {
+	yo caddy get_service "${argc_service}"
+}
+
+# @cmd
+# @arg	service
+# @arg	endpoint
+add_service_endpoint() {
+	yo caddy add_service_endpoint "${argc_service}" "${argc_endpoint}"
+}
+
+# @cmd
+# @arg	service
+# @arg	hostport
+set_service_hostport() {
+	yo caddy set_service_hostport "${argc_service}" "${argc_hostport}"
+}
+
+# @cmd
+# @arg	service
+# @arg	endpoint
+remove_service_endpoint() {
+	yo caddy remove_service_endpoint "${argc_service}" "${argc_endpoint}"
+}
+
+# @cmd
+# @arg	service
+remove_service() {
+	yo caddy remove_service "${argc_service}"
+}
+
+eval "$(argc --argc-eval "${0}" "${@}")"
