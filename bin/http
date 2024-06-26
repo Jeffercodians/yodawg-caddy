@@ -18,36 +18,22 @@ list_services() {
 }
 
 # @cmd
-# @arg	service
+# @arg	name
 get_service() {
-	yo caddy get_service "${argc_service}"
+	yo caddy get_service "${argc_name}"
 }
 
 # @cmd
-# @arg	service
-# @arg	endpoint
-add_service_endpoint() {
-	yo caddy add_service_endpoint "${argc_service}" "${argc_endpoint}"
-}
-
-# @cmd
-# @arg	service
+# @arg	name	
 # @arg	hostport
-set_service_hostport() {
-	yo caddy set_service_hostport "${argc_service}" "${argc_hostport}"
+add_service() {
+	yo caddy add_service "${argc_name}" "${argc_hostport}"
 }
 
 # @cmd
-# @arg	service
-# @arg	endpoint
-remove_service_endpoint() {
-	yo caddy remove_service_endpoint "${argc_service}" "${argc_endpoint}"
-}
-
-# @cmd
-# @arg	service
+# @arg	name
 remove_service() {
-	yo caddy remove_service "${argc_service}"
+	yo caddy remove_service "${argc_name}"
 }
 
 eval "$(argc --argc-eval "${0}" "${@}")"

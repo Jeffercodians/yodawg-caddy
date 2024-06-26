@@ -7,18 +7,20 @@ mkdir -p "${CADDY_ENDPOINTS_ROOT}"
 
 # @cmd
 status() {
-	_docker_compose ps
+	docker_compose ps
 }
 
 # @cmd
 up() {
 	render_caddyfiles
-	_docker_compose up -d
+	docker_compose up -d
+	_set_generic "http" "${SERVICE_NAME}"
 }
 
 # @cmd
 down() {
-	_docker_compose down
+	docker_compose down
+	_set_generic "http"
 }
 
 # @cmd
@@ -29,14 +31,14 @@ reload() {
 
 # @cmd
 logs() {
-	_docker_compose logs
+	docker_compose logs
 }
 
 # @cmd
 # @alias	exec,caddy
 # @arg	caddy_args~
 exec_caddy() {
-	_docker_compose exec "${SERVICE_FRONTEND}" \
+	docker_compose exec "${SERVICE_FRONTEND}" \
 		caddy "${argc_caddy_args[@]:-"${@}"}"
 }
 
@@ -49,7 +51,7 @@ list_services() {
 
 # @cmd
 # @arg service
-get_service_endpoint() {
+get_service() {
 	local _hostport _endpoints
 	_hostport="$(cat "${CADDY_ENDPOINTS_ROOT}/hostport.${argc_service:-"${1}"}")"
 	_endpoints="$(
@@ -61,7 +63,6 @@ get_service_endpoint() {
 # @cmd
 # @arg service
 # @arg endpoint
-# @arg hostport
 add_service_endpoint() {
 	local _endpoints _endpoint_file
 	_endpoint_file="${CADDY_ENDPOINTS_ROOT}/endpoints.${argc_service:-"${1}"}"
@@ -86,7 +87,8 @@ set_service_hostport() {
 
 # @cmd
 # @arg service 
-remove_service() {	
+remove_service() {
+	echo "removing service ${argc_service:-"${1}"}"
 	rm -f "${SERVICE_CACHE}/endpoints/endpoints.${argc_service:-"${1}"}" \
 		"${SERVICE_CACHE}/endpoints/hostport.${argc_service:-"${1}"}"
 }
@@ -101,7 +103,7 @@ render_caddyfiles() (
 	readarray -t _services < <(list_services)
 	for _service in "${_services[@]}"; do
 		read -r SERVICE_HOSTPORT SERVICE_ENDPOINT \
-			< <(get_service_endpoint "${_service}")
+			< <(get_service "${_service}")
 		export SERVICE_HOSTPORT SERVICE_ENDPOINT
 		SERVICE_ENDPOINT="$(tr ',' ' ' <<< "${SERVICE_ENDPOINT}")"
 
