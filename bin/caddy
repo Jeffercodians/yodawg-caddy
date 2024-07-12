@@ -7,20 +7,28 @@ mkdir -p "${CADDY_ENDPOINTS_ROOT}"
 
 # @cmd
 status() {
-	docker_compose ps
+	include "<docker>"
+
+	docker::compose ps
 }
 
 # @cmd
 up() {
+	include "<docker>"
+	include "<generic>"
+
 	render_caddyfiles
-	docker_compose up -d
-	_set_generic "http" "${SERVICE_NAME}"
+	docker::compose up -d
+	generic::set "http" "${SERVICE_NAME}"
 }
 
 # @cmd
 down() {
-	docker_compose down
-	_set_generic "http"
+	include "<docker>"
+	include "<generic>"
+
+	docker::compose down
+	generic::set "http"
 }
 
 # @cmd
@@ -31,14 +39,16 @@ reload() {
 
 # @cmd
 logs() {
-	docker_compose logs
+	include "<docker>"
+
+	docker::compose logs
 }
 
 # @cmd
 # @alias	exec,caddy
 # @arg	caddy_args~
 exec_caddy() {
-	docker_compose exec "${SERVICE_FRONTEND}" \
+	docker::compose exec "${SERVICE_FRONTEND}" \
 		caddy "${argc_caddy_args[@]:-"${@}"}"
 }
 
